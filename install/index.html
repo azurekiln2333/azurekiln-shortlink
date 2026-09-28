@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>安装 AzureKiln Link</title>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link href="../css/azurekiln.css" rel="stylesheet">
+</head>
+<body class="ak-page">
+<header class="ak-header">
+    <div class="ak-shell ak-header-inner">
+        <a class="ak-brand" href="../index.php">
+            <span class="ak-brand-mark" aria-hidden="true">A</span>
+            <span class="ak-brand-text">AzureKiln Link</span>
+        </a>
+        <button class="ak-icon-button" type="button" data-theme-toggle aria-label="切换深色模式">
+            <span class="ak-material" data-theme-icon aria-hidden="true">dark_mode</span>
+        </button>
+    </div>
+</header>
+<main class="ak-main">
+    <div class="ak-content">
+        <section class="ak-card ak-card-body">
+            <p class="ak-eyebrow">Setup</p>
+            <h1 class="ak-page-heading">安装或升级</h1>
+            <p class="ak-page-copy">请先在根目录 config.php 填写数据库和 OAuth2 配置，再使用相同的数据库信息安装或升级。完成后请删除 install 文件夹。</p>
+            <div id="install-content">
+            <div id="selection" class="ak-install-options" aria-label="安装模式">
+                <button type="button" class="ak-button ak-button-secondary" data-option="install" onclick="setOption(0,this)">
+                    <span class="ak-material" aria-hidden="true">download</span>安装
+                </button>
+                <button type="button" class="ak-button ak-button-secondary" data-option="upgrade" onclick="setOption(1,this)">
+                    <span class="ak-material" aria-hidden="true">upgrade</span>升级
+                </button>
+            </div>
+            <form autocomplete="off" action="javascript:submitForm(this)" class="ak-form-stack">
+                <p id="install-notice" class="ak-hint" role="status">请先选择安装或升级。</p>
+                <div class="ak-form-grid">
+                    <div class="ak-field"><label class="ak-label" for="dbhost">数据库主机地址</label><input class="ak-input" disabled required name="dbhost" id="dbhost" placeholder="例如 127.0.0.1" type="text"></div>
+                    <div class="ak-field"><label class="ak-label" for="dbuser">数据库用户名</label><input class="ak-input" disabled required name="dbuser" id="dbuser" placeholder="数据库用户名" type="text"></div>
+                    <div class="ak-field"><label class="ak-label" for="dbpass">数据库密码</label><input class="ak-input" disabled name="dbpass" id="dbpass" placeholder="数据库密码" type="password"></div>
+                    <div class="ak-field"><label class="ak-label" for="dbname">数据库名称</label><input class="ak-input" disabled required name="dbname" id="dbname" placeholder="数据库名称" type="text"></div>
+                </div>
+                <div class="ak-form-actions">
+                    <button class="ak-button ak-button-primary" type="submit"><span class="ak-material" aria-hidden="true">play_arrow</span>提交配置</button>
+                </div>
+            </form>
+            </div>
+        </section>
+    </div>
+</main>
+<script src="../js/azurekiln-theme.js"></script>
+<script>
+    var option = null;
+    var form = document.forms[0];
+
+    function setOption(selectedOption, button) {
+        option = selectedOption;
+        document.querySelectorAll('#selection button').forEach(function (item) { item.classList.remove('ak-button-primary'); item.classList.add('ak-button-secondary'); });
+        button.classList.remove('ak-button-secondary');
+        button.classList.add('ak-button-primary');
+        Array.prototype.forEach.call(form.elements, function (element) { element.disabled = false; });
+        document.getElementById('install-notice').textContent = selectedOption ? '升级会保留现有数据，请确认数据库信息正确。' : '安装需要一个空数据库以及对应的用户名和密码。';
+    }
+
+    function submitForm() {
+        var body = {
+            req: 'poop',
+            dbhost: form.elements.dbhost.value,
+            dbuser: form.elements.dbuser.value,
+            dbpass: form.elements.dbpass.value,
+            dbname: form.elements.dbname.value,
+            option: option
+        };
+        fetch('i.php', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(body)
+        }).then(function (response) {
+            return response.json();
+        }).then(function (result) {
+            if (result === 0) {
+                showSuccess(option);
+            } else if (result === 2002) {
+                alert('主机名无效。');
+            } else if (result === 1045) {
+                alert('无效的用户名或密码。');
+            } else if (result === 1049) {
+                alert('数据库名称无效。');
+            } else {
+                alert('安装失败，请检查数据库配置、权限和 SQL 文件。错误码：' + result);
+            }
+        });
+    }
+
+    function showSuccess(upgrade) {
+        var content = document.getElementById('install-content');
+        var html = upgrade
+            ? '<span class="ak-material" style="font-size:48px;color:var(--ak-success);">check_circle</span><h2 class="ak-modal-title">升级成功</h2><p>现在可以删除安装文件夹。升级后请检查管理面板设置。</p>'
+            : '<span class="ak-material" style="font-size:48px;color:var(--ak-success);">check_circle</span><h2 class="ak-modal-title">安装成功</h2><p>现在可以删除安装文件夹，然后进入管理面板完成初始配置。</p>';
+        html += '<p><a class="ak-button ak-button-primary" href="../admin/settings.php">进入管理面板</a></p>';
+        content.style.opacity = '0';
+        window.setTimeout(function () {
+            content.innerHTML = html;
+            content.style.opacity = '1';
+        }, 300);
+    }
+</script>
+</body>
+</html>

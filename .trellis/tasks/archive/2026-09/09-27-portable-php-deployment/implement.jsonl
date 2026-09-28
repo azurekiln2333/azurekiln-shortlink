@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Preserve authorization, PKCE and request-host URLs."}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Preserve installer and historical aliases."}

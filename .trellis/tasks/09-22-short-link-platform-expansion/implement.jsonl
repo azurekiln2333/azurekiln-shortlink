@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Schema, migration, and legacy-link compatibility rules."}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Auth, CSRF, ownership, and production validation rules."}

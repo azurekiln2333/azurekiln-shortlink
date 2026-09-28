@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Verify additive schema and migration behavior."}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Verify security and compatibility contracts."}

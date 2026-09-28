@@ -1,0 +1,4 @@
+html, body { width: 100%; min-height: 100%; }
+
+/* Kept as the legacy admin stylesheet entry point; the shared AzureKiln layer owns the layout. */
+body.ak-page .navbar { display: none; }
