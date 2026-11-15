@@ -83,6 +83,8 @@ docker compose up -d
 
 默认容器只绑定 `127.0.0.1:8080`，供宿主机反向代理转发；需要直接对外时在 `.env` 设 `APP_BIND_HOST=0.0.0.0`、`APP_PORT=80`。
 
+GHCR 首次发布的镜像默认私有，需一次性公开后服务器才能免登录拉取：仓库页面右侧 Packages → `azurekiln-shortlink` → Package settings → Danger Zone → Change visibility → Public。若保持私有，则在服务器执行 `docker login ghcr.io`（使用勾选 `read:packages` 的 PAT），并取消 `docker-compose.yaml` 中 watchtower 挂载 `~/.docker/config.json` 那行注释。
+
 容器采用桥接网络，通过 `host.docker.internal:host-gateway` 连接宿主机 MySQL（比 `network_mode: host` 更安全，保留端口映射和隔离性）。宿主机 MySQL 需要两处配合：
 
 ```ini
