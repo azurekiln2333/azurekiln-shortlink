@@ -1,0 +1,30 @@
+# The document root is the repo root, so keep the build context to the
+# runnable PHP site only. Meta, dev and secret files never reach the image.
+.git
+.github
+.trellis
+.zcode
+.agents
+.claude
+.codebuddy
+.cursor
+.gemini
+.qoder
+.dsh
+.kiro
+.trae
+.tmp
+.tmp-dump
+tests
+node_modules
+.env
+.env.*
+!.env.example
+docker-compose.yaml
+docker-compose.build.yaml
+.gitattributes
+.gitignore
+AGENTS.md
+README.md
+Dockerfile
+.dockerignore

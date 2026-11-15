@@ -64,6 +64,45 @@ https://xxx/install/index.html
 
 安装页面使用与 `config.php` 相同的数据库信息。安装器只负责初始化或升级数据表，不会自动修改配置文件；安装完成后必须删除 `install` 文件夹。生产环境默认不启用管理员密码登录。
 
+### Docker 部署
+
+CI 在推送 `v*` 标签时自动构建镜像并发布到 GHCR（`ghcr.io/azurekiln2333/azurekiln-shortlink`，同时打 `:版本号` 和 `:latest`），服务器用 Docker Compose 运行，Watchtower 每 600 秒轮询镜像更新并自动重建容器。
+
+服务器上的完整流程（需要 Docker Engine ≥ 20.10 与 Compose v2）：
+
+```bash
+git clone https://github.com/azurekiln2333/azurekiln-shortlink.git azurekiln-link
+cd azurekiln-link
+cp .env.example .env
+# 编辑 .env：数据库账号、OAuth2 参数，APP_PORT/APP_BIND_HOST 按需调整
+docker compose up -d
+# 打开安装页初始化数据库：http://服务器:8080/install/index.html
+# 数据库主机填 host.docker.internal（不是 127.0.0.1）
+# 安装成功后编辑 .env 将 APP_INSTALL_LOCK 改为 1 并 docker compose up -d
+```
+
+默认容器只绑定 `127.0.0.1:8080`，供宿主机反向代理转发；需要直接对外时在 `.env` 设 `APP_BIND_HOST=0.0.0.0`、`APP_PORT=80`。
+
+容器采用桥接网络，通过 `host.docker.internal:host-gateway` 连接宿主机 MySQL（比 `network_mode: host` 更安全，保留端口映射和隔离性）。宿主机 MySQL 需要两处配合：
+
+```ini
+# /etc/mysql/mysql.conf.d/mysqld.cnf：默认 bind-address = 127.0.0.1 只接受本机，
+# 改为监听所有地址（或至少 docker0 的 172.17.0.1），改完重启 MySQL。
+bind-address = 0.0.0.0
+```
+
+```sql
+-- 授权 Docker 桥接网段访问（Compose 自建网络通常是 172.18.0.0/16 起）。
+CREATE USER 'shortny'@'%' IDENTIFIED BY 'your-db-password';
+GRANT ALL ON your-db-name.* TO 'shortny'@'%';
+FLUSH PRIVILEGES;
+```
+
+安装完成后将 `.env` 的 `APP_INSTALL_LOCK` 设为 `1`：容器镜像每次更新都会重建文件系统，无法像传统部署那样删除 `install` 文件夹，该开关让 `/install/i.php` 直接返回 403。以后如需在安装页执行升级脚本，临时改回 `0` 并 `docker compose up -d` 即可。
+
+日常更新由 Watchtower 自动完成（拉到新 `:latest` 后原地重建并清理旧镜像）；手动更新用 `docker compose pull && docker compose up -d`。发版流程：本地修改后推送 `git tag v1.0.1 && git push github v1.0.1`，CI 构建推送镜像，服务器最迟 10 分钟内自动生效。
+
+
 ### 统一配置
 
 部署参数都在根目录 `config.php`：数据库、调试开关、OAuth2 客户端和端点、两个回调地址、管理员白名单、旧密码登录开关、API 跨域白名单，以及访问统计开关、盐值和保留天数。编辑对应数组值即可，不必设置 PHP-FPM 或容器环境变量。已有环境变量仍可使用，优先级为 **环境变量 > config.php**，已设置的空值也会覆盖文件值。

@@ -4,6 +4,14 @@ header('Content-Type: application/json; charset=utf-8');
 ini_set('display_errors', '0');
 ini_set('log_errors', '1');
 
+// Container images recreate the filesystem on every update pull, so an
+// environment lock replaces the documented "delete the install folder" step.
+// Docker deployments set APP_INSTALL_LOCK=1 once the installer has run.
+if (getenv('APP_INSTALL_LOCK') === '1') {
+    echo json_encode(403);
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(405);
     exit;

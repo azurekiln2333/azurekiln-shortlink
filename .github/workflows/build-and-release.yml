@@ -1,0 +1,61 @@
+name: Build and release
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      # php -n skips all extensions on purpose: the suite stubs mysqli itself
+      # and asserts config loading without opening a database connection.
+      - run: php -n tests/portable-deployment.php
+
+  image:
+    # Publish the container on version tags only: ghcr.io/<repo>:vX.Y.Z plus
+    # :latest for non-prerelease versions. Watchtower on the server tracks
+    # :latest, so tagging a release is the whole deployment flow.
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: [test]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Resolve image tags
+        id: meta
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY,,}"
+          version="${RELEASE_TAG#v}"
+          tags=$(printf '%s' "$image:$RELEASE_TAG")
+          if [ "${version#*-}" = "$version" ]; then
+            tags=$(printf '%s\n%s' "$tags" "$image:latest")
+          fi
+          {
+            echo "image=$image"
+            echo "tags<<EOF"
+            echo "$tags"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Build and push image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}

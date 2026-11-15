@@ -1,2 +1,5 @@
 .tmp/
 .tmp-dump/
+.env
+.env.*
+!.env.example
